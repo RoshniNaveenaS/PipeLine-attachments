@@ -56,6 +56,9 @@ jobs:
       - name: Build application for production
         run: cd incidents-app && npx cds build --production
 
+      - name: Install dependencies for gen folder
+        run: cd incidents-app && cd gen && npm install
+
       - name: Deploy using custom action
         uses: ./.github/actions/deploy
         with:
