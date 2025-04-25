@@ -19,6 +19,12 @@ inputs:
   CF_APP_NAME:
     description: "Cloud Foundry application name"
     required: true
+  HOST:
+    description: "Application host"
+    required: true
+  DOMAIN:
+    description: "Application domain"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -91,5 +97,8 @@ runs:
     - name: Deploy to Cloud Foundry
       shell: bash
       run: |
+        cf set-env ${{ inputs.CF_APP_NAME }} HOST ${{ inputs.HOST }}
+        cf set-env ${{ inputs.CF_APP_NAME }} DOMAIN ${{ inputs.DOMAIN }}
+        cf map-route ${{ inputs.CF_APP_NAME }} ${{ inputs.DOMAIN }} --hostname ${{ inputs.HOST }}
         cd incidents-app
         cf deploy gen/mta.tar -f
