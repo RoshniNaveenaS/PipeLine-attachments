@@ -67,7 +67,7 @@ jobs:
           CF_PASSWORD: ${{ secrets.CF_PASSWORD_ST }}
           CF_ORG: ${{ secrets.CF_ORG_ST }}
           CF_SPACE: ${{ secrets.CF_SPACE_ST }}
-          CF_APP_NAME: "incidents-testing-app"
+          CF_APP_NAME: "incidents-testing"
           HOST: "incidents-testing"
           DOMAIN: "cfapps.eu12.hana.ondemand.com"
 
