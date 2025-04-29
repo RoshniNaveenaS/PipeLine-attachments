@@ -8,6 +8,7 @@ service ProcessorService {
   entity Customers @readonly as projection on my.Customers;
 }
 
+
 /**
  * Service used by administrators to manage customers and incidents.
  */
