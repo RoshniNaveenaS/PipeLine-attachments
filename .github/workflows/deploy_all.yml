@@ -17,18 +17,18 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Clone Incidents App Repository and install dependencies
-        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app && npm install
+        run: git clone --branch attachmentsE2E --single-branch https://github.com/RoshniNaveenaS/PipeLine-attachments.git && cd incidents-app && npm install
 
-      - name: Use PR branch version of @cap-js/attachments
+      - name: Use PR branch version of @RoshniNaveenaS/PipeLine-attachments
         if: github.event_name == 'pull_request'
         run: |
           cd incidents-app
           BRANCH_NAME=${{ github.head_ref }}  # The PR branch name
-          echo "Using @cap-js/attachments branch: $BRANCH_NAME"
+          echo "Using @RoshniNaveenaS/PipeLine-attachments branch: $BRANCH_NAME"
       
           # Update the dependency in package.json
-          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
-            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
+          jq --arg url "git+https://github.com/RoshniNaveenaS/PipeLine-attachments.git#$BRANCH_NAME" \
+            '.dependencies["@RoshniNaveenaS/PipeLine-attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
       
           # Install the updated dependency
           npm install
@@ -66,6 +66,13 @@ jobs:
           CF_SPACE: ${{ secrets.CF_SPACE_ST }}
           CF_APP_NAME: "incidents-testing-app"
 
+      - name: Get app URL from Cloud Foundry
+        shell: bash
+        run: |
+          APP_NAME="incidents-testing-app"  # or incidents-testing-app-mtx
+          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}')
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -89,9 +96,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clone Incidents App Repository
-        run: git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
+        run: git clone --branch attachmentsE2EMTX --single-branch https://github.com/RoshniNaveenaS/PipeLine-attachments.git && cd incidents-app
 
-      - name: Extract @cap-js/attachments version from PR
+      - name: Extract @RoshniNaveenaS/PipeLine-attachments version from PR
         if: github.event_name == 'pull_request'
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
@@ -101,19 +108,19 @@ jobs:
           VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
               .[] | select(.filename == "package.json") | .patch' | 
-              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
+              grep -oP '(?<=\+.*"@RoshniNaveenaS/PipeLine-attachments": ")[^"]*' || echo "")
 
           if [[ -z "$VERSION" ]]; then
-            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
+            echo "No updated @RoshniNaveenaS/PipeLine-attachments version found in PR. Skipping installation."
           else
             echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
           fi
 
-      - name: Install @cap-js/attachments with PR version (if updated)
+      - name: Install @RoshniNaveenaS/PipeLine-attachments with PR version (if updated)
         if: env.ATTACHMENTS_VERSION != ''
         run: |
           cd incidents-app
-          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+          npm install @RoshniNaveenaS/PipeLine-attachments @$ATTACHMENTS_VERSION
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -159,7 +166,7 @@ jobs:
 
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
-      
+
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
