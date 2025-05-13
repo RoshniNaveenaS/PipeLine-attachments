@@ -4,13 +4,14 @@ on:
     branches:
       - main
   pull_request:
-    types: [labeled, opened, reopened, synchronize]
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 jobs:
   deploy-singletenant:
     name: Deploy Single Tenant App
-    if: github.event.label.name == 'deploy-ST'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,9 +22,9 @@ jobs:
 
       - name: Use PR branch version of @cap-js/attachments
         if: github.event_name == 'pull_request'
+        working-directory: incidents-app
         run: |
-          cd incidents-app
-          BRANCH_NAME=${{ github.head_ref }}  # The PR branch name
+          BRANCH_NAME=${{ github.head_ref }}
           echo "Using @cap-js/attachments branch: $BRANCH_NAME"
       
           # Update the dependency in package.json
@@ -42,19 +43,24 @@ jobs:
         run: npm install -g @sap/cds
 
       - name: Add SAP HANA for production
-        run: cd incidents-app && npx cds add hana --for production
+        working-directory: incidents-app
+        run: npx cds add hana --for production
 
       - name: Configure XSUAA-based authentication
-        run: cd incidents-app && npx cds add xsuaa --for production
+        working-directory: incidents-app
+        run: npx cds add xsuaa --for production
 
-      - name: Configure Workzone service  
-        run: cd incidents-app && npx cds add workzone
+      - name: Configure Workzone service
+        working-directory: incidents-app
+        run: npx cds add workzone
 
       - name: Add app folder dependencies
-        run: cd incidents-app/app/incidents && npm install
+        working-directory: incidents-app/app/incidents
+        run: npm install
 
       - name: Build application for production
-        run: cd incidents-app && npx cds build --production
+        working-directory: incidents-app
+        run: npx cds build --production
 
       - name: Deploy using custom action
         uses: ./.github/actions/deploy
@@ -69,9 +75,10 @@ jobs:
       - name: Get app URL from Cloud Foundry
         shell: bash
         run: |
-          APP_NAME="incidents-testing-app"  # or incidents-testing-app-mtx
-          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}')
+          APP_NAME="incidents-testing-app"
+          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+          echo "Retrieved APP_URL: $APP_URL"
 
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
@@ -81,15 +88,24 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             const link = `https://${{ env.APP_URL }}`;
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: `🚀 The application has been deployed to Cloud Foundry.`
-            });
+            if (!link.includes("Failed")) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${link}`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ Failed to retrieve the single-tenant application URL.`
+              });
+            }
+
   deploy-mtx:
     name: Deploy Multitenant App
-    if: github.event.label.name == 'deploy-MTX'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -109,7 +125,6 @@ jobs:
             "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
               .[] | select(.filename == "package.json") | .patch' | 
               grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
-
           if [[ -z "$VERSION" ]]; then
             echo "No updated @cap-js/attachments version found in PR. Skipping installation."
           else
@@ -118,9 +133,8 @@ jobs:
 
       - name: Install @cap-js/attachments with PR version (if updated)
         if: env.ATTACHMENTS_VERSION != ''
-        run: |
-          cd incidents-app
-          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+        working-directory: incidents-app
+        run: npm install @cap-js/attachments@$ATTACHMENTS_VERSION
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -128,45 +142,63 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: cd incidents-app && npm install
+        working-directory: incidents-app
+        run: npm install
 
       - name: Install CDS CLI
         run: npm install -g @sap/cds
 
       - name: Add SAP HANA for production
-        run: cd incidents-app && npx cds add hana --for production
+        working-directory: incidents-app
+        run: npx cds add hana --for production
 
       - name: Configure XSUAA-based authentication
-        run: cd incidents-app && npx cds add xsuaa --for production
+        working-directory: incidents-app
+        run: npx cds add xsuaa --for production
 
       - name: Add app folder dependencies
-        run: cd incidents-app/app/incidents && npm install
-      
+        working-directory: incidents-app/app/incidents
+        run: npm install
+
       - name: Add multitenancy (MTX)
-        run: cd incidents-app && npx cds add multitenancy --for production && npm install
+        working-directory: incidents-app
+        run: npx cds add multitenancy --for production && npm install
 
       - name: Install the multitenancy module dependencies
-        run: cd incidents-app && cd mtx/sidecar && npm install && npm install @sap/xsenv
+        working-directory: incidents-app/mtx/sidecar
+        run: npm install && npm install @sap/xsenv
 
       - name: Freeze npm dependencies
-        run: cd incidents-app && npm update --package-lock-only and npm update --package-lock-only --prefix mtx/sidecar
+        working-directory: incidents-app
+        run: |
+          npm update --package-lock-only
+          npm update --package-lock-only --prefix mtx/sidecar
 
       - name: Build MTX-based application
-        run: cd incidents-app && npx cds build --production
+        working-directory: incidents-app
+        run: npx cds build --production
 
       - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
         uses: ./.github/actions/deploy
         with:
           CF_API: ${{ secrets.CF_API_MT }}
-          CF_USERNAME: ${{ secrets.CF_USERNAME_MT}}
+          CF_USERNAME: ${{ secrets.CF_USERNAME_MT }}
           CF_PASSWORD: ${{ secrets.CF_PASSWORD_MT }}
           CF_ORG: ${{ secrets.CF_ORG_MT }}
           CF_SPACE: ${{ secrets.CF_SPACE_MT }}
           CF_APP_NAME: "incidents-testing-app-mtx"
 
+      - name: Get app URL from Cloud Foundry
+        shell: bash
+        run: |
+          APP_NAME="incidents-testing-app-mtx"
+          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+          echo "Retrieved APP_URL: $APP_URL"
+
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
-      
+
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -175,9 +207,18 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             const link = `https://${{ env.APP_URL }}`;
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: `🚀 The application MTX has been deployed to Cloud Foundry.`
-            });
+            if (!link.includes("Failed")) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 The multitenant application has been deployed to Cloud Foundry: ${link}`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ Failed to retrieve the multitenant application URL.`
+              });
+            }
