@@ -73,12 +73,12 @@ jobs:
           CF_PASSWORD: ${{ secrets.CF_PASSWORD_ST }}
           CF_ORG: ${{ secrets.CF_ORG_ST }}
           CF_SPACE: ${{ secrets.CF_SPACE_ST }}
-          CF_APP_NAME: "incidents-testing-app"
+          CF_APP_NAME: "nsincidents"
 
       - name: Get app URL from Cloud Foundry
         shell: bash
         run: |
-          APP_NAME="incidents-testing-app"
+          APP_NAME="nsincidents"
           APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
@@ -185,12 +185,12 @@ jobs:
           CF_PASSWORD: ${{ secrets.CF_PASSWORD_MT }}
           CF_ORG: ${{ secrets.CF_ORG_MT }}
           CF_SPACE: ${{ secrets.CF_SPACE_MT }}
-          CF_APP_NAME: "incidents-testing-app-mtx"
+          CF_APP_NAME: "nsincidents-mtx"
 
       - name: Get app URL from Cloud Foundry
         shell: bash
         run: |
-          APP_NAME="incidents-testing-app-mtx"
+          APP_NAME="nsincidents-mtx"
           APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
