@@ -40,16 +40,10 @@ runs:
         sudo mv cf /usr/local/bin/
         sudo mv cf8 /usr/local/bin/
 
-    - name: Verify CF CLI installation
+    - name: Verify installation
       shell: bash
       run: |
         cf --version
-
-    - name: Install CF HTML5 Apps Repo CLI Plugin
-      shell: bash
-      run: |
-        cf install-plugin -r CF-Community "html5-plugin" -f
-        cf plugins
 
     - name: Authenticate with Cloud Foundry
       shell: bash
