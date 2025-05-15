@@ -79,7 +79,7 @@ jobs:
         shell: bash
         run: |
           APP_NAME="nsincidents"
-          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
+          APP_URL=$(cf html5-list -di incidents-testing-destination -u | grep "$APP_NAME" | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
 
@@ -191,7 +191,7 @@ jobs:
         shell: bash
         run: |
           APP_NAME="nsincidents-mtx"
-          APP_URL=$(cf app "$APP_NAME" | grep routes | awk '{print $2}' || echo "Failed to retrieve APP_URL")
+          APP_URL=$(cf html5-list -di incidents-testing-destination -u | grep "$APP_NAME" | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
 
