@@ -75,7 +75,7 @@ runs:
     - name: Undeploy existing apps if exists
       shell: bash
       run: |
-        for APP in incidents-testing incidents-testingMTX; do
+        for APP in nsincidents nsincidentsMTX; do
           echo "🔍 Attempting to undeploy $APP"
           echo "y" | cf undeploy "$APP" --delete-services --delete-service-keys || echo "⚠️ $APP not found or undeploy failed"
         done
