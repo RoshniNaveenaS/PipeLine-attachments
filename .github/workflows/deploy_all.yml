@@ -78,6 +78,7 @@ jobs:
       - name: Get app URL from Cloud Foundry
         shell: bash
         run: |
+          cf install-plugin -r CF-Community "html5-plugin" -f  
           APP_NAME="incidents-testing"
           APP_URL=$(cf html5-list -di incidents-testing-destination -u | grep "$APP_NAME" | awk '{print $2}' || echo "Failed to retrieve APP_URL")
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
