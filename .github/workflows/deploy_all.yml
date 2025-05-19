@@ -80,7 +80,7 @@ jobs:
         run: |
           cf install-plugin -r CF-Community "html5-plugin" -f  
           APP_NAME="incidents-testing"
-          APP_URL=$(cf html5-list -di incidents-testing-destination -u | awk 'NR>4 {print $NF}')
+          APP_URL=$(cf html5-list -di incidents-testing-destination -u | awk 'NR>4 {print $NF}' | sed 's|^https\?://||')
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
 
